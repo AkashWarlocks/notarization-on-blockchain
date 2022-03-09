@@ -71,11 +71,26 @@ const getContractInstance = async () => {
   }
 };
 
+const newAccount = async () => {
+  try {
+    const newUser = await web3.eth.accounts.create();
+
+    await web3.eth.accounts.wallet.add({
+      privateKey: newUser.privateKey,
+      address: newUser.address,
+    });
+
+    return newUser;
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
   initializeWeb3,
   getWeb3Instance,
   getContractInstance,
   getCommon,
+  newAccount,
   web3,
   common,
   notarization_contract_instance,

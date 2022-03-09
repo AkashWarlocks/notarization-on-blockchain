@@ -25,7 +25,7 @@ class VaultUtil {
         privateKey,
         publicKey,
       };
-      console.log(keyPair);
+
       return keyPair;
     } catch (error) {
       throw error;
