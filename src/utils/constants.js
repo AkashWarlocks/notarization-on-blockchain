@@ -7,4 +7,8 @@ const CONTRACT_EVENTS = {
   ],
 };
 
-module.exports = { CONTRACT_EVENTS };
+const CONTRACT_ERRORS = {
+  E1: 'Document already exists to different user',
+  E2: 'Document Doesnot exists',
+};
+module.exports = { CONTRACT_EVENTS, CONTRACT_ERRORS };

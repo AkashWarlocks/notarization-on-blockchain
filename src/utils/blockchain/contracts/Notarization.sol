@@ -2,95 +2,131 @@
 
 pragma solidity ^0.8.0;
 
-contract Notarization {
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 
-    // Struct for single doc/data to be stored
+contract Notarization is Ownable {
+    
     struct USER_NOTARY {
         string user_data;
-        bytes32 user_data_hash;
+        bytes32 document_hash;
         uint256 timestamp;
         address notarized_by;
     }
 
-    event Notarized(address indexed_to, string hash, uint256 timestamp);
-
-    mapping (address => USER_NOTARY[]) private notary_data;
-    // 1 =>[ { abc, abcakjscadjkada, 1232324, 1}, {pqr, asfsdfsfdfsdf, 234234, 2} ]
-    constructor(){
-
-    }
-    /**
-        To check if user data exists
-     */
-    modifier user_exists(address user) {
-        require(notary_data[user].length != 0, "User Doesnot exists");
-        _;
+    struct DOCUMENT {
+        string document;
+        string owner;
+        bool flag;
     }
 
-    /**
-        To store the hash of the data/document
-        1. Hash the doc/data
-        2. Add it to the user Map create (notary_data)
-    */
+    event Notarized(address indexed owner, string hash, uint256 timestamp);
+    event OwnerChanged(string indexed hash, string previous_owner, string new_owner);
 
-    function setData(string memory document, address user) public  {
+    mapping (string => USER_NOTARY[]) private notary_data;
+    mapping (bytes32 => DOCUMENT) private document_data;
+
+    constructor(){ }
+
+    function setData(string memory document, string memory user) public {
        // Create a hash of document 
-       bytes32 hash = createDocHash(document); 
-
+       bytes32 hash = createHash(document); 
+       address signer = msg.sender;
+       uint256 timestamp = block.timestamp; 
+       DOCUMENT memory new_doc = document_data[hash]; 
+       // If doument is new add the user as the owner of the document 
+       if(new_doc.flag == false) {
+           document_data[hash] = DOCUMENT(document, user, true);
+       } else {
+           require(createHash(new_doc.owner) == createHash(user), "Document already exists to different user");
+       }
+    
        // Add to the mapping
-       notary_data[user].push(USER_NOTARY(document, hash, block.timestamp, tx.origin));
+       notary_data[user].push(USER_NOTARY(document, hash, timestamp, signer));
+       document_data[hash] = DOCUMENT(document, user, true);
+
        // emit event
-       emit Notarized(msg.sender, document, block.timestamp);
+       emit Notarized(signer, document, timestamp);
     }
 
-    /**
-    To Verify the document stored
-    1. input - user address and its document.
-    2. Get hash using find_hash function.
-    3. If found == true : doument is found, hence belongs to user and verified.
-    */
-    function verify_document(address user, string memory document) public view returns(bool verified) {
+    function verify_document(string memory user, string memory document) public view returns(bool verified) {
         // Create hash of a document
-       bytes32 hash = createDocHash(document);
-
+        bytes32 hash = createHash(document);
+        
         // Compare the hash
-        (USER_NOTARY memory data, bool found) = find_hash(notary_data[user], hash);
-        verified = found; 
+        DOCUMENT memory document_details = document_data[hash];
+        //verified = false;
+
+        require(document_details.flag == true, "Document doesnot exists");
+
+        bytes32 user_hash = createHash(user);
+        bytes32 document_owner_hash = createHash(document_details.owner);
+
+        verified = user_hash == document_owner_hash ? true:false;
+        
+       // (USER_NOTARY memory data, bool found) = find_hash(notary_data[user], hash, user);
+        
+      // verified = found; 
     }
 
-    /**
-    1. Use keccak256 to hash the data
-    use abi.encodePacked(arg) : convert string into bytes64
-     */
-    function createDocHash(string memory data) private pure returns(bytes32 hashed_data) {
+    function createHash(string memory data) private pure returns(bytes32 hashed_data) {
         hashed_data = keccak256(abi.encodePacked(data));
     }
 
-    function find_hash(USER_NOTARY[] memory hash_array, bytes32 hashed_data) private pure returns(USER_NOTARY memory user_data, bool found){
+    function find_hash(USER_NOTARY[] memory hash_array, bytes32 hashed_data, string memory user) private view returns(USER_NOTARY memory user_data, bool found){
+        
+        string memory doc_owner = _documentOwner(hashed_data);
+
         found = false;
+
+        bytes32 doc_owner_hash = createHash(doc_owner);
+        bytes32 user_hash = createHash(user);
+
         for(uint i =0; i<hash_array.length;i++){
-            if(hash_array[i].user_data_hash == hashed_data){
+            if(hash_array[i].document_hash == hashed_data && doc_owner_hash == user_hash){
                 user_data = hash_array[i];
                 found = true;
+                break;
             }
         }
     }
 
-    /**
-     Function to get data related to user and timestamp when stored
-    */
-    function getData(uint256 timestamp, address user, address notarized_by) public view user_exists(user) returns (string memory user_data) {
-        USER_NOTARY[] memory hash_array = notary_data[user];
+    // function getData(uint256 timestamp, string memory user, address notarized_by) public view returns (string memory user_data) {
+    //     USER_NOTARY[] memory hash_array = notary_data[user];
 
-        if(hash_array.length == 0) {
-            revert ('User does not exists'); 
-        }
+    //     for(uint i = 0; i<hash_array.length;i++){
+    //         if(hash_array[i].timestamp == timestamp && hash_array[i].notarized_by == notarized_by){
+    //             user_data = hash_array[i].user_data;
+    //         }
+    //     }
+    // }
+    
 
-        for(uint i =0; i<hash_array.length;i++){
-            if(hash_array[i].timestamp == timestamp && hash_array[i].notarized_by == notarized_by){
-                user_data = hash_array[i].user_data;
-            }
-        }
+    function changeDocumentOwner(string memory document, string memory new_owner) onlyOwner() public {
+        // Create a hash of document 
+        bytes32 hash = createHash(document); 
+
+        DOCUMENT storage _document_data = document_data[hash];
+        // Check if document exists
+        require(_document_data.flag == true, "Document Doesnot exists");
+       
+        string memory previous_owner = _document_data.owner;
+
+        _document_data.owner = new_owner;
+
+        emit OwnerChanged(document, previous_owner, new_owner);
+    }
+
+    function getDocumentOwner(string memory document) public view returns(string memory documentOwner) {
+        bytes32 document_hash = createHash(document);
+        documentOwner = _documentOwner(document_hash);
+    }
+
+    function _documentOwner(bytes32 document_hash) private view returns (string memory owner){
+        owner = document_data[document_hash].owner;
+    }
+
+    function documentExists(bytes32 hash) private view returns (bool) {
+        return document_data[hash].flag;
     }
 
 }

@@ -23,7 +23,8 @@ const initializeWeb3 = async () => {
     common = Common.custom(CustomChain.PolygonMumbai, {
       baseChain: 5,
     });
-
+    web3.eth.handleRevert = true;
+    console.log(web3.eth.handleRevert);
     //common = Common.custom(Chain.Ropsten, { hardfork: Hardfork.Petersburg });
     await initializeContract();
   } catch (error) {

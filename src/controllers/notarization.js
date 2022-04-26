@@ -1,4 +1,5 @@
 const notarizationService = require('../services/notarization');
+const Responses = require('../utils/response');
 
 let controller = {};
 
@@ -6,15 +7,14 @@ controller.saveData = async (req, res, next) => {
   try {
     // Call saveHash service
     const data = await notarizationService.saveHash(
-      req.body.senderId,
       req.body.userId,
       req.body.documentHash,
     );
 
-    res.status(200).send({ payload: data });
+    res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });
-    res.status(400).send({ msg: 'something went wrong' });
+    next(error);
   }
 };
 
@@ -25,7 +25,7 @@ controller.verifyData = async (req, res, next) => {
       req.body.documentHash,
     );
 
-    res.status(200).send({ payload: { data } });
+    res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });
     res.status(400).send({ msg: 'something went wrong' });
@@ -34,13 +34,12 @@ controller.verifyData = async (req, res, next) => {
 
 controller.getData = async (req, res, next) => {
   try {
-    console.log(req.query);
     const data = await notarizationService.getData(
       req.query.userId,
       req.query.signerId,
       req.query.timestamp,
     );
-    res.status(200).send({ payload: { data } });
+    res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });
     res.status(400).send({ msg: 'something went wrong' });

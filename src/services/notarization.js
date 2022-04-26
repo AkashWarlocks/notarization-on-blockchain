@@ -2,9 +2,10 @@ const smartContractFunctionCall = require('../utils/blockchain/function-call');
 const User = require('../model/user');
 const vaultUtilInstance = require('../utils/vault');
 const { createUser, newAccount } = require('../utils/blockchain');
+const Document = require('../model/documentSchema');
 let notarizationService = {};
 
-notarizationService.saveHash = async (senderId, userId, documentHash) => {
+notarizationService.saveHash = async (userId, documentHash) => {
   try {
     /**
      * 1. Get User data for sender as well as user from vault
@@ -14,31 +15,39 @@ notarizationService.saveHash = async (senderId, userId, documentHash) => {
 
     //Call vault service
     //console.log({ senderId, userId, documentHash });
-    let senderKeyPair = await vaultUtilInstance.getKeyPairFromVault(senderId);
-    let userKeyPair = await vaultUtilInstance.getKeyPairFromVault(userId);
+    let senderKeyPair = await vaultUtilInstance.getKeyPairFromVault('owner');
+    // let userKeyPair = await vaultUtilInstance.getKeyPairFromVault(userId);
 
     let data = await smartContractFunctionCall(
       'notarization',
       'setData',
-      [documentHash, userKeyPair.publicKey],
+      [documentHash, userId],
       senderKeyPair,
       'send',
     );
+    console.log('------Data from events after storing hash-----');
     console.log({ data });
     // Add data in database
-    await User.updateOne(
-      { _id: userId },
-      {
-        $push: {
-          documents: {
-            timestamp: data.Notarized.timestamp,
-            signedBy: senderId,
-            transactionHash: data.transactionHash,
-          },
-        },
-      },
-    );
+    // await User.updateOne(
+    //   { _id: userId },
+    //   {
+    //     $push: {
+    //       documents: {
+    //         timestamp: data.Notarized.timestamp,
+    //         signedBy: senderKeyPair.publicKey,
+    //         transactionHash: data.transactionHash,
+    //       },
+    //     },
+    //   },
+    // );
+    const newDoc = new Document({
+      userId,
+      timestamp: data.Notarized.timestamp,
+      signedBy: senderKeyPair.publicKey,
+      transactionHash: data.transactionHash,
+    });
 
+    await newDoc.save();
     // console.log({ data });
     return {
       transactionHash: data.transactionHash,
@@ -68,7 +77,6 @@ notarizationService.verifyHash = async (userId, documentHash) => {
       'call',
     );
 
-    console.log({ data });
     return data;
   } catch (error) {
     throw error;

@@ -6,6 +6,7 @@ const { initializeWeb3 } = require('./utils/blockchain');
 const app = express();
 const mongoose = require('mongoose');
 const { MONGODB_URL } = require('./config');
+const globalErrorHandler = require('./middleware/error');
 
 require('./model/index');
 
@@ -20,6 +21,8 @@ app.use(cors());
 var index = require('./routes/index');
 const { saveHash } = require('./services/notarization');
 app.use(index);
+
+app.use(globalErrorHandler);
 
 app.listen(3000, async () => {
   console.log('server running on port 3000');

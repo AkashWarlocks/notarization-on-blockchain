@@ -3,6 +3,7 @@ const EthereumTx = require('@ethereumjs/tx').Transaction;
 const Common = require('@ethereumjs/common').default;
 const { MATIC_BASE_URL } = require('../../config');
 const axios = require('../axios');
+const { BlockchainError } = require('../error');
 let transaction = {};
 
 // Function to get the number of transaction count of the user: using publicKey
@@ -27,15 +28,14 @@ transaction.getTxCount = async (publicKey) => {
  */
 transaction.encodeData = async (contractInstance, method, data) => {
   try {
-    console.log({ method, data });
     const web3 = await getWeb3Instance();
-    console.log(contractInstance.methods);
     const encodedData = await contractInstance.methods[method](
       ...data,
     ).encodeABI();
 
     return encodedData;
   } catch (error) {
+    console.log('in encode error');
     throw error;
   }
 };
@@ -54,10 +54,9 @@ transaction.estimatedGasLimit = async (
   encodedData,
   contractAddress,
 ) => {
-  try {
-    const web3 = await getWeb3Instance();
+  const web3 = await getWeb3Instance();
 
-    console.log({ userKeypair, nonce, encodedData, contractAddress });
+  try {
     const estimatedGasLimit = await web3.eth.estimateGas({
       from: userKeypair.publicKey,
       nonce,
@@ -67,10 +66,14 @@ transaction.estimatedGasLimit = async (
 
     //const gasPrice = await this.getGasPrice();
     const response = await axios(MATIC_BASE_URL, '', 'GET', {}, {}, {}, 'json');
-    console.log({ estimatedGasLimit, gasPrice: response.data });
     return { estimatedGasLimit, gasPrice: response.data };
   } catch (error) {
-    throw error;
+    let code = error.message.replace(
+      'Returned error: execution reverted: ',
+      '',
+    );
+    error.code = code;
+    throw new BlockchainError(error.message, 400, code);
   }
 };
 
@@ -156,8 +159,10 @@ transaction.sendSignedTransaction = async (signedTransaction) => {
     const transaction = await web3.eth.sendSignedTransaction(signedTransaction);
     return transaction;
   } catch (error) {
+    console.log('in error');
     let receipt = null;
     if (error.receipt) {
+      //console.log('in error');
       receipt = await getTransactionReceipt(error.receipt.transactionHash);
     }
 
@@ -184,7 +189,6 @@ transaction.getTransactionReceipt = async (txHash) => {
  */
 transaction.callFunction = async (contractInstance, method, data, options) => {
   try {
-    console.log({ contractInstance, method, data, options });
     const response = await contractInstance.methods[method](...data).call(
       options,
     );

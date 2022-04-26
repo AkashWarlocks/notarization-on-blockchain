@@ -92,19 +92,47 @@ const smartContractFunctionCall = async (
 
       //
       const transaction = await sendSignedTransaction(signedTransaction);
-      //console.log({ transaction });
+      console.log({ transaction });
+
+      console.log({ logs: transaction.logs });
 
       // Get Receipt of transaction based on transaction hash
       const receipt = await getTransactionReceipt(transaction.transactionHash);
-      //console.log({ receipt });
+      console.log({ receipt });
+      console.log({ logs: receipt.logs });
 
       result = { ...result, transactionHash: receipt.transactionHash };
       let array = receipt.logs.slice(0, receipt.logs.length - 1);
+      // let array = [receipt.logs[1]];
 
       /**
        * This logic to read the receipt and get the details related to the events or return data
        * from the smart contract function call.
        */
+
+      console.log({ array });
+      const web3 = await getWeb3Instance();
+
+      // let decodedData = await web3.eth.abi.decodeLogs(
+      //   [
+      //     {
+      //       name: 'owner',
+      //       type: 'address',
+      //     },
+      //     {
+      //       name: 'hash',
+      //       type: 'string',
+      //     },
+      //     {
+      //       name: 'timestamp',
+      //       type: 'uint256',
+      //     },
+      //   ],
+      //   '0x0000000000000000000000000000000000000000000000000014d5a406b44c100000000000000000000000000000000000000000000000000d9a75f0b4637ca00000000000000000000000000000000000000000000011faee0b7fb638fa408d0000000000000000000000000000000000000000000000000d85a04cadaf30900000000000000000000000000000000000000000000011faee20555a3fae8c9d',
+      //   log.data.topics,
+      // );
+
+      // console.log({ decodedData });
       await Promise.all(
         array.map(async (log, i) => {
           let event = functionEvent[i];
@@ -113,11 +141,21 @@ const smartContractFunctionCall = async (
           let abi = contract.filter(
             (c) => c.type === 'event' && c.name === event.eventName,
           );
+          console.log({ data: abi[0].inputs });
+          console.log({ log });
           const web3 = await getWeb3Instance();
-          let decodedData = await web3.eth.abi.decodeParameters(
+          let topics = log.topics.slice(1);
+          let decodedData = await web3.eth.abi.decodeLog(
             abi[0].inputs,
             log.data,
+            topics,
           );
+
+          // let decodedData = await web3.eth.abi.decodeParameters(
+          //   abi[0].inputs,
+          //   '0x000000000000000000000000000000000000000000000000000e760fd23801da0000000000000000000000000000000000000000000000000c9f3e2a2a76b36c000000000000000000000000000000000000000000001327ab45731bd33f174d0000000000000000000000000000000000000000000000000c90c81a583eb192000000000000000000000000000000000000000000001327ab53e92ba5771927',
+          // );
+          console.log({ decodedData });
           result = { ...result, [event.eventName]: decodedData };
         }),
       );
