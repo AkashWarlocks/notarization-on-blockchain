@@ -39,7 +39,7 @@ class VaultUtil {
    */
   async writeKey(userId, keypair) {
     try {
-      await this.vault.write(`notarizarion/${userId}`, {
+      await this.vault.write(`notarization/${userId}`, {
         key: keypair.publicKey,
         value: keypair.privateKey,
       });
