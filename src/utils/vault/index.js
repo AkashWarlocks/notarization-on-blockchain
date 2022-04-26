@@ -16,7 +16,7 @@ class VaultUtil {
     try {
       // Check if bypass blockchain is true
 
-      const accessResponse = await this.vault.read(`notarizarion/${userId}`);
+      const accessResponse = await this.vault.read(`notarization/${userId}`);
       //console.log({ accessResponse });
       const privateKey = accessResponse.data.value;
       const publicKey = accessResponse.data.key;
