@@ -67,17 +67,17 @@ notarizationService.verifyHash = async (userId, documentHash) => {
      */
 
     //Call vault service
-    let userKeyPair = await vaultUtilInstance.getKeyPairFromVault(userId);
+    let userKeyPair = await vaultUtilInstance.getKeyPairFromVault('owner');
 
     let data = await smartContractFunctionCall(
       'notarization',
       'verify_document',
-      [userKeyPair.publicKey, documentHash],
+      [userId, documentHash],
       userKeyPair,
       'call',
     );
 
-    return data;
+    return { verified: data };
   } catch (error) {
     throw error;
   }

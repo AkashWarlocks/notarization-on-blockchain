@@ -28,7 +28,7 @@ controller.verifyData = async (req, res, next) => {
     res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });
-    res.status(400).send({ msg: 'something went wrong' });
+    next(error);
   }
 };
 

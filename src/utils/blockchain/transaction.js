@@ -28,6 +28,7 @@ transaction.getTxCount = async (publicKey) => {
  */
 transaction.encodeData = async (contractInstance, method, data) => {
   try {
+    console.log({ method, data });
     const web3 = await getWeb3Instance();
     const encodedData = await contractInstance.methods[method](
       ...data,
@@ -98,20 +99,16 @@ transaction.signTransaction = async (
   try {
     const web3 = await getWeb3Instance();
 
-    // console.log({
-    //   txCount,
-    //   data,
-    //   userKeypair,
-    //   contractAddress,
-    //   gasLimit,
-    //   estimatedGasPrice: web3.utils.toWei(estimatedGasPrice, 'gwei'),
-    // });
+    console.log({
+      gasLimit,
+      estimatedGasPrice: web3.utils.toWei(estimatedGasPrice, 'gwei'),
+    });
 
     const txObject = {
       chainId: 80001,
       nonce: web3.utils.toHex(txCount),
-      gasLimit: web3.utils.toHex(236906), // Raise the gas limit to a much higher amount
-      gasPrice: web3.utils.toHex(web3.utils.toWei('30', 'gwei')),
+      gasLimit: web3.utils.toHex(gasLimit), // Raise the gas limit to a much higher amount
+      gasPrice: web3.utils.toHex(web3.utils.toWei(estimatedGasPrice, 'gwei')),
       to: contractAddress,
       data,
     };
@@ -161,9 +158,10 @@ transaction.sendSignedTransaction = async (signedTransaction) => {
   } catch (error) {
     console.log('in error');
     let receipt = null;
+    console.log({ error });
     if (error.receipt) {
       //console.log('in error');
-      receipt = await getTransactionReceipt(error.receipt.transactionHash);
+      receipt = await this.getTransactionReceipt(error.receipt.transactionHash);
     }
 
     throw error;
@@ -195,7 +193,12 @@ transaction.callFunction = async (contractInstance, method, data, options) => {
 
     return response;
   } catch (error) {
-    throw error;
+    let code = error.message.replace(
+      'Your request got reverted with the following reason string: ',
+      '',
+    );
+    error.code = code;
+    throw new BlockchainError(error.message, 400, code);
   }
 };
 
