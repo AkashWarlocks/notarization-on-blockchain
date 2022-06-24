@@ -24,6 +24,8 @@
     "morgan": "^1.10.0",
     "node-vault": "^0.9.22",
     "validator": "^13.7.0",
-    "web3": "^1.7.0"
+    "web3": "^1.7.0",
+    "winston": "^3.7.2",
+    "winston-cloudwatch": "^6.0.0"
   }
 }

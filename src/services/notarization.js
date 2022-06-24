@@ -50,6 +50,7 @@ notarizationService.saveHash = async (userId, documentHash) => {
     await newDoc.save();
     // console.log({ data });
     return {
+      uploadSuccess: true,
       transactionHash: data.transactionHash,
       timestamp: data.Notarized.timestamp,
     };

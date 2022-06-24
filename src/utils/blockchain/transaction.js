@@ -74,7 +74,7 @@ transaction.estimatedGasLimit = async (
       '',
     );
     error.code = code;
-    throw new BlockchainError(error.message, 400, code);
+    throw new BlockchainError(error.message, 200, code);
   }
 };
 

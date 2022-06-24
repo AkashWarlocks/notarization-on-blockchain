@@ -10,7 +10,7 @@ class Responses {
   static Error(message, payload = {}) {
     return {
       message,
-      payload,
+      uploadSuccess: payload,
       time: Number(new Date()),
     };
   }
