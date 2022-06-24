@@ -2,6 +2,7 @@ class Responses {
   static Normal(payload, message = 'OK') {
     return {
       message,
+      uploadSuccess: true,
       payload,
       time: Number(new Date()),
     };
