@@ -7,27 +7,29 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 contract Notarization is Ownable {
     
     struct USER_NOTARY {
-        string user_data;
+        string document_data;
         bytes32 document_hash;
         uint256 timestamp;
         address notarized_by;
     }
 
     struct DOCUMENT {
+        bytes32 document_hash;
         string document;
+        string document_name;
         string owner;
         bool flag;
     }
 
-    event Notarized(address indexed owner, string hash, uint256 timestamp);
-    event OwnerChanged(string indexed hash, string previous_owner, string new_owner);
+    event Notarized(string indexed owner, bytes32 hash, string document_name, uint256 timestamp);
+    event OwnerChanged(bytes32 indexed hash, string previous_owner, string new_owner);
 
     mapping (string => USER_NOTARY[]) private notary_data;
     mapping (bytes32 => DOCUMENT) private document_data;
 
     constructor(){ }
 
-    function setData(string memory document, string memory user) public {
+    function setData(string memory document, string memory user, string memory document_name) public {
        // Create a hash of document 
        bytes32 hash = createHash(document); 
        address signer = msg.sender;
@@ -35,28 +37,29 @@ contract Notarization is Ownable {
        DOCUMENT memory new_doc = document_data[hash]; 
        // If doument is new add the user as the owner of the document 
        if(new_doc.flag == false) {
-           document_data[hash] = DOCUMENT(document, user, true);
+           document_data[hash] = DOCUMENT(hash,document, document_name, user, true);
        } else {
-           require(createHash(new_doc.owner) == createHash(user), "Document already exists to different user");
+           require(createHash(new_doc.owner) == createHash(user), "E1");
        }
     
        // Add to the mapping
        notary_data[user].push(USER_NOTARY(document, hash, timestamp, signer));
-       document_data[hash] = DOCUMENT(document, user, true);
+       
+       document_data[hash] = DOCUMENT(hash, document,document_name, user, true);
 
        // emit event
-       emit Notarized(signer, document, timestamp);
+       emit Notarized(user, hash, document_name, timestamp);
     }
 
     function verify_document(string memory user, string memory document) public view returns(bool verified) {
         // Create hash of a document
         bytes32 hash = createHash(document);
-        
+
         // Compare the hash
         DOCUMENT memory document_details = document_data[hash];
         //verified = false;
 
-        require(document_details.flag == true, "Document doesnot exists");
+        require(document_details.flag == true, "E2");
 
         bytes32 user_hash = createHash(user);
         bytes32 document_owner_hash = createHash(document_details.owner);
@@ -99,7 +102,6 @@ contract Notarization is Ownable {
     //         }
     //     }
     // }
-    
 
     function changeDocumentOwner(string memory document, string memory new_owner) onlyOwner() public {
         // Create a hash of document 
@@ -107,13 +109,13 @@ contract Notarization is Ownable {
 
         DOCUMENT storage _document_data = document_data[hash];
         // Check if document exists
-        require(_document_data.flag == true, "Document Doesnot exists");
+        require(_document_data.flag == true, "E2");
        
         string memory previous_owner = _document_data.owner;
 
         _document_data.owner = new_owner;
 
-        emit OwnerChanged(document, previous_owner, new_owner);
+        emit OwnerChanged(hash, previous_owner, new_owner);
     }
 
     function getDocumentOwner(string memory document) public view returns(string memory documentOwner) {
@@ -128,5 +130,14 @@ contract Notarization is Ownable {
     function documentExists(bytes32 hash) private view returns (bool) {
         return document_data[hash].flag;
     }
+
+    // function getUserDoc(string memory user) public view returns(DOCUMENT[] memory){
+    //     USER_NOTARY[] memory user_data = notary_data[user];
+    //     DOCUMENT[] memory user_document = new DOCUMENT[](user_data.length);
+    //     for(uint i = 0; i<user_data.length; i++) {
+    //         user_document.push(document_data[user_data[i].document_hash]);
+    //     }
+    //     return user_document;
+    // }
 
 }

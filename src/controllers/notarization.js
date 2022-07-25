@@ -9,6 +9,7 @@ controller.saveData = async (req, res, next) => {
     const data = await notarizationService.saveHash(
       req.body.userId,
       req.body.documentHash,
+      req.body.documentName,
     );
 
     res.status(200).send(Responses.Normal(data));
@@ -34,11 +35,7 @@ controller.verifyData = async (req, res, next) => {
 
 controller.getData = async (req, res, next) => {
   try {
-    const data = await notarizationService.getData(
-      req.query.userId,
-      req.query.signerId,
-      req.query.timestamp,
-    );
+    const data = await notarizationService.getData(req.query.userId);
     res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });

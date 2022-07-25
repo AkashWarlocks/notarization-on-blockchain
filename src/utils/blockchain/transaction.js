@@ -1,9 +1,11 @@
-const { getWeb3Instance, getCommon } = require('./index');
+const { getWeb3Instance, getCommon, notarizationABI } = require('./index');
 const EthereumTx = require('@ethereumjs/tx').Transaction;
 const Common = require('@ethereumjs/common').default;
-const { MATIC_BASE_URL } = require('../../config');
+const { MATIC_BASE_URL, CONTRACT_ADDRESS } = require('../../config');
+const { CONTRACT_EVENTS } = require('../constants');
+
 const axios = require('../axios');
-const { BlockchainError } = require('../error');
+const { BlockchainError, UserError } = require('../error');
 let transaction = {};
 
 // Function to get the number of transaction count of the user: using publicKey
@@ -199,6 +201,51 @@ transaction.callFunction = async (contractInstance, method, data, options) => {
     );
     error.code = code;
     throw new BlockchainError(error.message, 400, code);
+  }
+};
+
+transaction.readTransactionLogs = async (txHash, method) => {
+  try {
+    const web3 = await getWeb3Instance();
+
+    const receipt = await web3.eth.getTransactionReceipt(txHash);
+
+    let array = receipt.logs.slice(0, receipt.logs.length - 1);
+    // console.log({ array });
+    const functionEvent = CONTRACT_EVENTS[method];
+    // console.log({ functionEvent });
+    let result = null;
+    await Promise.all(
+      array.map(async (log, i) => {
+        let event = functionEvent[i];
+
+        let contract = notarizationABI;
+        let abi = contract.filter(
+          (c) => c.type === 'event' && c.name === event.eventName,
+        );
+        // console.log({ data: abi[0].inputs });
+        // console.log({ log });
+        const web3 = await getWeb3Instance();
+        let topics = log.topics.slice(1);
+        let decodedData = await web3.eth.abi.decodeLog(
+          abi[0].inputs,
+          log.data,
+          topics,
+        );
+
+        // let decodedData = await web3.eth.abi.decodeParameters(
+        //   abi[0].inputs,
+        //   '0x000000000000000000000000000000000000000000000000000e760fd23801da0000000000000000000000000000000000000000000000000c9f3e2a2a76b36c000000000000000000000000000000000000000000001327ab45731bd33f174d0000000000000000000000000000000000000000000000000c90c81a583eb192000000000000000000000000000000000000000000001327ab53e92ba5771927',
+        // );
+        // console.log({ decodedData });
+        result = { ...receipt, [event.eventName]: decodedData };
+      }),
+    );
+
+    return result;
+  } catch (error) {
+    console.log(error);
+    throw new UserError('Not able to read logs', 400, 'A1');
   }
 };
 

@@ -13,5 +13,6 @@ const CONTRACT_ERRORS = {
     uploadSuccess: false,
   },
   E2: { message: 'Document Doesnot exists' },
+  A1: { message: 'Cannot read logs' },
 };
 module.exports = { CONTRACT_EVENTS, CONTRACT_ERRORS };

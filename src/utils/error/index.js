@@ -30,6 +30,12 @@ class BlockchainError extends AppError {
   }
 }
 
+class UserError extends AppError {
+  constructor(message, statusCode, code) {
+    super('User', message, statusCode, true, code);
+  }
+}
+
 function isOperationalError(error) {
   if (error instanceof AppError) {
     return error.isOperational;
@@ -65,5 +71,6 @@ function isOperationalError(error) {
 module.exports = {
   AppError,
   BlockchainError,
+  UserError,
   isOperationalError,
 };

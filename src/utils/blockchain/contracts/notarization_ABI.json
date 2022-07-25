@@ -1,5 +1,23 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "document",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "new_owner",
+        "type": "string"
+      }
+    ],
+    "name": "changeDocumentOwner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -9,14 +27,20 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "address",
+        "internalType": "string",
         "name": "owner",
-        "type": "address"
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "hash",
+        "type": "bytes32"
       },
       {
         "indexed": false,
         "internalType": "string",
-        "name": "hash",
+        "name": "document_name",
         "type": "string"
       },
       {
@@ -34,9 +58,9 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "string",
+        "internalType": "bytes32",
         "name": "hash",
-        "type": "string"
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -74,6 +98,13 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
@@ -82,11 +113,29 @@
       },
       {
         "internalType": "string",
-        "name": "new_owner",
+        "name": "user",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "document_name",
         "type": "string"
       }
     ],
-    "name": "changeDocumentOwner",
+    "name": "setData",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -121,44 +170,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "document",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "user",
-        "type": "string"
-      }
-    ],
-    "name": "setData",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

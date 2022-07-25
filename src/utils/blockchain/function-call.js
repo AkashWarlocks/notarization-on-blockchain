@@ -77,17 +77,18 @@ const smartContractFunctionCall = async (
         encodedData,
         contractAddress,
       );
-
+      console.log({ estimateGasPrice });
+      console.log('signing transaction');
       // 3.
       const signedTransaction = await signTransaction(
         `${txCount}`,
         encodedData,
         keypair,
         contractAddress,
-        estimateGasPrice.estimatedGasLimit,
-        //'819758',
-        `${estimateGasPrice.gasPrice.fastest}`,
-        // '10.500000012',
+        //estimateGasPrice.estimatedGasLimit,
+        '819758',
+        //`${estimateGasPrice.gasPrice.fastest}`,
+        '30.817300933',
       );
 
       //
