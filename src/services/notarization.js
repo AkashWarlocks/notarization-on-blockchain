@@ -8,6 +8,7 @@ const transaction = require('../utils/blockchain/transaction');
 let notarizationService = {};
 const BigNumber = require('bignumber.js').BigNumber;
 const moment = require('moment');
+const { $where } = require('../model/user');
 
 notarizationService.saveHash = async (userId, documentHash, documentName) => {
   try {
@@ -90,6 +91,7 @@ notarizationService.verifyHash = async (userId, documentHash) => {
 
 notarizationService.getData = async (userId, signerId, timestamp) => {
   try {
+    console.log({ userId });
     /**
      * 1. Get User data for sender as well as user from vault
      * 2. Call smartContract function
@@ -107,44 +109,37 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
     }).sort({ createdAt: -1 });
     const returnData = [];
 
-    await Promise.all(
-      userData.map(async (d) => {
-        const transactionData = await transaction.readTransactionLogs(
-          d.transactionHash,
-          'setData',
-        );
+    // console.log({ userData });
 
-        //console.log({ transactionData });
-        const a = new BigNumber(transactionData.effectiveGasPrice);
-        const b = new BigNumber(transactionData.gasUsed);
-        const c = new BigNumber(10e18);
-        console.log(`${a.multipliedBy(b)}`);
-        //console.log(`${a.mult(b)}`);
+    for (let d of userData) {
+      const transactionData = await transaction.readTransactionLogs(
+        d.transactionHash,
+        'setData',
+      );
 
-        let costOfTransaction = a.multipliedBy(b).dividedBy(c);
-        let object = {
-          transactionHash: d.transactionHash,
-          blockNumber: transactionData.blockNumber,
-          ownerHash: transactionData.Notarized.owner,
-          documentHash: transactionData.Notarized.hash,
-          documentName: transactionData.Notarized.document_name,
-          signer: transactionData.from,
-          costOfTransaction: `${costOfTransaction} MATIC `,
-          date: moment.unix(d.timestamp).format('DD/MM/YYYY HH:mm:ss'),
-        };
-        returnData.push(object);
-      }),
-    );
+      //console.log({ transactionData });
+      const a = new BigNumber(transactionData.effectiveGasPrice);
+      const b = new BigNumber(transactionData.gasUsed);
+      const c = new BigNumber(10e18);
+      console.log(`${a.multipliedBy(b)}`);
+      //console.log(`${a.mult(b)}`);
+
+      let costOfTransaction = a.multipliedBy(b).dividedBy(c);
+      let object = {
+        transactionHash: d.transactionHash,
+        blockNumber: transactionData.blockNumber,
+        ownerHash: transactionData.Notarized.owner,
+        documentHash: transactionData.Notarized.hash,
+        documentName: transactionData.Notarized.document_name,
+        signer: transactionData.from,
+        costOfTransaction: `${costOfTransaction} MATIC `,
+        date: moment.unix(d.timestamp).format('DD/MM/YYYY HH:mm:ss'),
+      };
+      returnData.push(object);
+    }
 
     //console.log({ userData });
 
-    // let data = await smartContractFunctionCall(
-    //   'notarization',
-    //   'getData',
-    //   [timestamp, userKeyPair.publicKey, signerKeyPair.publicKey],
-    //   signerKeyPair,
-    //   'call',
-    // );
     return returnData;
   } catch (error) {
     throw error;
