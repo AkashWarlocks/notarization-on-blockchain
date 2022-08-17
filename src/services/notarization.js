@@ -1,14 +1,17 @@
 const smartContractFunctionCall = require('../utils/blockchain/function-call');
 const User = require('../model/user');
 const vaultUtilInstance = require('../utils/vault');
-const { createUser, newAccount } = require('../utils/blockchain');
+const {
+  createUser,
+  newAccount,
+  calculateCostOfTransaction,
+} = require('../utils/blockchain');
 const Document = require('../model/documentSchema');
 
 const transaction = require('../utils/blockchain/transaction');
 let notarizationService = {};
 const BigNumber = require('bignumber.js').BigNumber;
 const moment = require('moment');
-const { $where } = require('../model/user');
 
 notarizationService.saveHash = async (userId, documentHash, documentName) => {
   try {
@@ -50,6 +53,7 @@ notarizationService.saveHash = async (userId, documentHash, documentName) => {
       timestamp: data.Notarized.timestamp,
       signedBy: senderKeyPair.publicKey,
       transactionHash: data.transactionHash,
+      timeElapsed: data.timeElapsed,
     });
 
     await newDoc.save();
@@ -117,14 +121,10 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
         'setData',
       );
 
-      //console.log({ transactionData });
-      const a = new BigNumber(transactionData.effectiveGasPrice);
-      const b = new BigNumber(transactionData.gasUsed);
-      const c = new BigNumber(10e18);
-      console.log(`${a.multipliedBy(b)}`);
-      //console.log(`${a.mult(b)}`);
-
-      let costOfTransaction = a.multipliedBy(b).dividedBy(c);
+      let costOfTransaction = await calculateCostOfTransaction(
+        transactionData.effectiveGasPrice,
+        transactionData.gasUsed,
+      );
       let object = {
         transactionHash: d.transactionHash,
         blockNumber: transactionData.blockNumber,
@@ -133,6 +133,7 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
         documentName: transactionData.Notarized.document_name,
         signer: transactionData.from,
         costOfTransaction: `${costOfTransaction} MATIC `,
+        timeTaken: d.timeElapsed,
         date: moment.unix(d.timestamp).format('DD/MM/YYYY HH:mm:ss'),
       };
       returnData.push(object);

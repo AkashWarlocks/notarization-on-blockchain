@@ -164,6 +164,7 @@ const smartContractFunctionCall = async (
 
     const timeElapsed = (Date.now() - startTime) / 1000;
     console.log('Pushed transaction', { timeElapsed });
+    result.timeElapsed = timeElapsed;
     return result;
   } catch (error) {
     throw error;

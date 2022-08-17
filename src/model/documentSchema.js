@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
-const { ObjectId } = require('mongodb');
 
-// User registration schema
+// Notarised Document schema
 const documentSchema = mongoose.Schema(
   {
     userId: {
@@ -19,6 +17,10 @@ const documentSchema = mongoose.Schema(
     },
     transactionHash: {
       type: String,
+      required: true,
+    },
+    timeElapsed: {
+      type: Number,
       required: true,
     },
   },

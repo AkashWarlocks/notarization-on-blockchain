@@ -10,5 +10,6 @@ router.post('/verify-document', controller.verifyData);
 router.get('/user-hash', controller.getData);
 router.post('/create-user', controller.createUser);
 router.get('/user', controller.getUserData);
+router.get('/common-data', controller.getCommonData);
 
 module.exports = router;

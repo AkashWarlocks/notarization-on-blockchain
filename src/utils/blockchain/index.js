@@ -2,6 +2,8 @@ const Web3 = require('web3');
 const Common = require('@ethereumjs/common').default;
 const { Chain, CustomChain, Hardfork } = require('@ethereumjs/common');
 const config = require('../../config');
+const BigNumber = require('bignumber.js').BigNumber;
+
 let web3 = null;
 let common = null;
 let notarization_contract_instance = null;
@@ -86,12 +88,27 @@ const newAccount = async () => {
     throw error;
   }
 };
+
+const calculateCostOfTransaction = async (effectiveGasPrice, gasUsed) => {
+  try {
+    const a = new BigNumber(effectiveGasPrice);
+    const b = new BigNumber(gasUsed);
+    const c = new BigNumber(1e18);
+
+    let costOfTransaction = a.multipliedBy(b).dividedBy(c);
+
+    return costOfTransaction;
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
   initializeWeb3,
   getWeb3Instance,
   getContractInstance,
   getCommon,
   newAccount,
+  calculateCostOfTransaction,
   web3,
   common,
   notarization_contract_instance,

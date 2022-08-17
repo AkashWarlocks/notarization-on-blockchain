@@ -1,4 +1,5 @@
 const notarizationService = require('../services/notarization');
+const userService = require('../services/user');
 const Responses = require('../utils/response');
 
 let controller = {};
@@ -36,6 +37,7 @@ controller.verifyData = async (req, res, next) => {
 controller.getData = async (req, res, next) => {
   try {
     const data = await notarizationService.getData(req.query.userId);
+    //const data = await userService.getAllData();
     res.status(200).send(Responses.Normal(data));
   } catch (error) {
     console.log({ error });
@@ -64,6 +66,15 @@ controller.getUserData = async (req, res, next) => {
     res.status(200).send({ payload: data });
   } catch (error) {
     console.log({ error });
+    res.status(400).send({ msg: 'something went wrong' });
+  }
+};
+
+controller.getCommonData = async (req, res, next) => {
+  try {
+    const data = await userService.getAllData();
+    res.status(200).send(Responses.Normal(data));
+  } catch (error) {
     res.status(400).send({ msg: 'something went wrong' });
   }
 };
