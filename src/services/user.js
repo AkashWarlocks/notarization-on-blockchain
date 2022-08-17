@@ -102,7 +102,7 @@ userService.getAllData = async () => {
         // console.log(cost.toString());
         const avgCost = cost.div(new BigNumber(d.txHash.length));
         filesCountData.push(d.txHash.length);
-        avgCostData.push(avgCost);
+        avgCostData.push(parseFloat(avgCost.toString()));
       }
 
       result.timeTaken = array;
