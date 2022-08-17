@@ -10,6 +10,7 @@ const {
 } = require('../utils/blockchain');
 const transaction = require('../utils/blockchain/transaction');
 const BigNumber = require('big-number/big-number');
+const { set, get } = require('../utils/redis');
 
 userService.createUser = async (email, name) => {
   try {
@@ -40,70 +41,80 @@ userService.createUser = async (email, name) => {
 userService.getAllData = async () => {
   try {
     // Time data
-    const data = await Document.aggregate([
-      {
-        $project: {
-          _id: 0,
-          date: { $subtract: ['$createdAt', new Date(0)] },
-          timeTaken: '$timeElapsed',
-          // transactionHash: {
-          //   $group: {
-          //     _id: { $week: '$createdAt' },
-          //     txHash: { $addToSet: '$transactionHash' },
-          //   },
-          // },
-        },
-      },
-    ]);
-
-    const array = [];
-    data.map((d) => {
-      array.push(Object.values(d));
-    });
-
-    // cost Data
-    let filesCountData = [];
-    const avgCostData = [];
-    const userData = await Document.aggregate([
-      {
-        $group: {
-          _id: { $week: '$createdAt' },
-          txHash: { $addToSet: '$transactionHash' },
-        },
-      },
-      {
-        $sort: {
-          _id: 1,
-        },
-      },
-    ]);
-
-    for (let d of userData) {
-      let cost = new BigNumber(0);
-      for (let hash of d.txHash) {
-        const transactionData = await transaction.readTransactionLogs(
-          hash,
-          'setData',
-        );
-        let costOfTransaction = await calculateCostOfTransaction(
-          transactionData.effectiveGasPrice,
-          transactionData.gasUsed,
-        );
-
-        cost = costOfTransaction.plus(cost);
-      }
-      // console.log(cost.toString());
-      const avgCost = cost.div(new BigNumber(d.txHash.length));
-      filesCountData.push(d.txHash.length);
-      avgCostData.push(avgCost);
-    }
-
+    // console.log('in this');
+    const redisData = await get('common-data');
+    console.log({ redisData });
+    let parsedData = JSON.parse(redisData);
     let result = {};
-    result.timeTaken = array;
-    result.avgCost = avgCostData;
-    result.filesCountData = filesCountData;
+    if (parsedData === null) {
+      const data = await Document.aggregate([
+        {
+          $project: {
+            _id: 0,
+            date: { $subtract: ['$createdAt', new Date(0)] },
+            timeTaken: '$timeElapsed',
+            // transactionHash: {
+            //   $group: {
+            //     _id: { $week: '$createdAt' },
+            //     txHash: { $addToSet: '$transactionHash' },
+            //   },
+            // },
+          },
+        },
+      ]);
+
+      const array = [];
+      data.map((d) => {
+        array.push(Object.values(d));
+      });
+
+      // cost Data
+      let filesCountData = [];
+      const avgCostData = [];
+      const userData = await Document.aggregate([
+        {
+          $group: {
+            _id: { $week: '$createdAt' },
+            txHash: { $addToSet: '$transactionHash' },
+          },
+        },
+        {
+          $sort: {
+            _id: -1,
+          },
+        },
+      ]);
+
+      for (let d of userData) {
+        let cost = new BigNumber(0);
+        for (let hash of d.txHash) {
+          const transactionData = await transaction.readTransactionLogs(
+            hash,
+            'setData',
+          );
+          let costOfTransaction = await calculateCostOfTransaction(
+            transactionData.effectiveGasPrice,
+            transactionData.gasUsed,
+          );
+
+          cost = costOfTransaction.plus(cost);
+        }
+        // console.log(cost.toString());
+        const avgCost = cost.div(new BigNumber(d.txHash.length));
+        filesCountData.push(d.txHash.length);
+        avgCostData.push(avgCost);
+      }
+
+      result.timeTaken = array;
+      result.avgCost = avgCostData;
+      result.filesCountData = filesCountData;
+      await set('common-data', JSON.stringify(result), 86400);
+    } else {
+      result = parsedData;
+    }
     return result;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 };

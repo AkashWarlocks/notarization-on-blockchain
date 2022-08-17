@@ -20,6 +20,8 @@ const AWS_CLOUDWATCH_CONFIG = {
 };
 
 const LOGGING_SERVICE = process.env.LOGGING_SERVICE;
+
+const REDIS_URL = process.env.REDIS_URL;
 module.exports = {
   WEB3_PROVIDER,
   CONTRACT_ADDRESS,
@@ -28,4 +30,5 @@ module.exports = {
   MONGODB_URL,
   AWS_CLOUDWATCH_CONFIG,
   LOGGING_SERVICE,
+  REDIS_URL,
 };

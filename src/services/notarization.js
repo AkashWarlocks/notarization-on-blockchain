@@ -12,6 +12,7 @@ const transaction = require('../utils/blockchain/transaction');
 let notarizationService = {};
 const BigNumber = require('bignumber.js').BigNumber;
 const moment = require('moment');
+const { set, deleteKey } = require('../utils/redis');
 
 notarizationService.saveHash = async (userId, documentHash, documentName) => {
   try {
@@ -58,6 +59,10 @@ notarizationService.saveHash = async (userId, documentHash, documentName) => {
 
     await newDoc.save();
     // console.log({ data });
+
+    // Set Redis common-data to empty
+
+    await deleteKey('common-data');
     return {
       uploadSuccess: true,
       transactionHash: data.transactionHash,

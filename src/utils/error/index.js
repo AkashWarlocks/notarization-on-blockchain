@@ -35,6 +35,11 @@ class UserError extends AppError {
     super('User', message, statusCode, true, code);
   }
 }
+class RedisError extends AppError {
+  constructor(message, statusCode, code) {
+    super('Redis', message, statusCode, true, code);
+  }
+}
 
 function isOperationalError(error) {
   if (error instanceof AppError) {
@@ -72,5 +77,6 @@ module.exports = {
   AppError,
   BlockchainError,
   UserError,
+  RedisError,
   isOperationalError,
 };
