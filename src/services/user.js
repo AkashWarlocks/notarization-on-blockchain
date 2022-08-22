@@ -53,7 +53,7 @@ userService.getAllData = async () => {
       const data = await Document.aggregate([
         {
           $sort: {
-            createdAt: -1,
+            createdAt: 1,
           },
         },
         {
