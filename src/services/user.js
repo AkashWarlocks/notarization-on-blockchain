@@ -43,7 +43,7 @@ userService.getAllData = async () => {
     // Time data
     // console.log('in this');
     const redisData = await get('common-data');
-    console.log({ redisData });
+    // console.log({ redisData });
     let parsedData = JSON.parse(redisData);
     let result = {};
     if (parsedData === null) {
@@ -65,7 +65,8 @@ userService.getAllData = async () => {
 
       const array = [];
       data.map((d) => {
-        array.push(Object.values(d));
+        // console.log(d);
+        array.push({ x: d.date, y: d.timeTaken });
       });
 
       // cost Data

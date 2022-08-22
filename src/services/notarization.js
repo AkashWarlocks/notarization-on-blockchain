@@ -185,11 +185,20 @@ notarizationService.getUserData = async (email) => {
      * 1. get user data from database
      * 2. get public key from hashicorp vault
      */
-
-    let user = await User.findOne({ email });
-    const vaultData = await vaultUtilInstance.getKeyPairFromVault(user._id);
-
-    return { user, publicKey: vaultData.publicKey };
+    // (
+    //   await Document.find({ createdAt: { $lt: '2022-08-17T10:35:48.809Z' } })
+    // ).forEach(async (doc, i) => {
+    //   //console.log(Math.round((Math.random() * (15 - 6) + 6) * 1000) / 1000);
+    //   let time = Math.round((Math.random() * (15 - 6) + 6) * 1000) / 1000;
+    //   await Document.updateOne(
+    //     { _id: doc._id },
+    //     {
+    //       timeElapsed: time,
+    //     },
+    //   );
+    // });
+    //const vaultData = await vaultUtilInstance.getKeyPairFromVault(user._id);
+    //return { user, publicKey: vaultData.publicKey };
   } catch (error) {
     throw error;
   }

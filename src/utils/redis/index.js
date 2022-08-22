@@ -47,10 +47,9 @@ const set = async (key, value, time) => {
 const get = async (key) => {
   try {
     // await redisClient.connect();
-    console.log(redisClient);
-    redisClient;
+
     const data = await redisClient.get(key);
-    console.log({ data });
+
     return data;
   } catch (error) {
     console.log(error);
