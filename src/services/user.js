@@ -47,7 +47,18 @@ userService.getAllData = async () => {
     let parsedData = JSON.parse(redisData);
     let result = {};
     if (parsedData === null) {
+      // let date = new Date();
+      // date.setDate(date.getDate() - 5);
+      // console.log(date);
       const data = await Document.aggregate([
+        {
+          $sort: {
+            createdAt: -1,
+          },
+        },
+        {
+          $limit: 50,
+        },
         {
           $project: {
             _id: 0,
@@ -64,7 +75,8 @@ userService.getAllData = async () => {
       ]);
 
       const array = [];
-      data.map((d) => {
+      data.map((d, i) => {
+        // console.log(i);
         // console.log(d);
         array.push({ x: d.date, y: d.timeTaken });
       });
