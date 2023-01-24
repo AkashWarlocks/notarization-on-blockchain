@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 
 contract Notarization is Ownable {
-    
+
     struct USER_NOTARY {
         string document_data;
         bytes32 document_hash;

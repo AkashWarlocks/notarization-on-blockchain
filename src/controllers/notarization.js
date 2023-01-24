@@ -11,6 +11,7 @@ controller.saveData = async (req, res, next) => {
       req.body.userId,
       req.body.documentHash,
       req.body.documentName,
+      req.body.provider,
     );
 
     res.status(200).send(Responses.Normal(data));
@@ -25,6 +26,7 @@ controller.verifyData = async (req, res, next) => {
     const data = await notarizationService.verifyHash(
       req.body.userId,
       req.body.documentHash,
+      req.body.provider,
     );
 
     res.status(200).send(Responses.Normal(data));

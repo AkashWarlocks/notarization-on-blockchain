@@ -31,9 +31,12 @@ module.exports = async (
       params,
       responseType,
     };
+    console.log(config);
     const response = await axios(config);
+    console.log(response.data);
     return response;
   } catch (error) {
-    throw new error();
+    console.log(error);
+    throw error;
   }
 };

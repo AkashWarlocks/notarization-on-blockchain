@@ -14,7 +14,12 @@ const BigNumber = require('bignumber.js').BigNumber;
 const moment = require('moment');
 const { set, deleteKey } = require('../utils/redis');
 
-notarizationService.saveHash = async (userId, documentHash, documentName) => {
+notarizationService.saveHash = async (
+  userId,
+  documentHash,
+  documentName,
+  provider,
+) => {
   try {
     /**
      * 1. Get User data for sender as well as user from vault
@@ -33,35 +38,24 @@ notarizationService.saveHash = async (userId, documentHash, documentName) => {
       [documentHash, userId, documentName],
       senderKeyPair,
       'send',
+      provider,
     );
     console.log('------Data from events after storing hash-----');
     console.log({ data });
-    // Add data in database
-    // await User.updateOne(
-    //   { _id: userId },
-    //   {
-    //     $push: {
-    //       documents: {
-    //         timestamp: data.Notarized.timestamp,
-    //         signedBy: senderKeyPair.publicKey,
-    //         transactionHash: data.transactionHash,
-    //       },
-    //     },
-    //   },
-    // );
+
     const newDoc = new Document({
       userId,
       timestamp: data.Notarized.timestamp,
       signedBy: senderKeyPair.publicKey,
       transactionHash: data.transactionHash,
       timeElapsed: data.timeElapsed,
+      provider,
     });
 
     await newDoc.save();
     // console.log({ data });
 
     // Set Redis common-data to empty
-
     await deleteKey('common-data');
     return {
       uploadSuccess: true,
@@ -73,7 +67,7 @@ notarizationService.saveHash = async (userId, documentHash, documentName) => {
   }
 };
 
-notarizationService.verifyHash = async (userId, documentHash) => {
+notarizationService.verifyHash = async (userId, documentHash, provider) => {
   try {
     /**
      * 1. Get User data for sender as well as user from vault
@@ -90,6 +84,7 @@ notarizationService.verifyHash = async (userId, documentHash) => {
       [userId, documentHash],
       userKeyPair,
       'call',
+      provider,
     );
 
     return { verified: data };

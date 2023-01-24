@@ -11,6 +11,7 @@ const {
 const transaction = require('../utils/blockchain/transaction');
 const BigNumber = require('big-number/big-number');
 const { set, get } = require('../utils/redis');
+const smartContractFunctionCall = require('../utils/blockchain/function-call');
 
 userService.createUser = async (email, name) => {
   try {
@@ -41,16 +42,16 @@ userService.createUser = async (email, name) => {
 userService.getAllData = async () => {
   try {
     // Time data
-    // console.log('in this');
     const redisData = await get('common-data');
     // console.log({ redisData });
+
     let parsedData = JSON.parse(redisData);
     let result = {};
     if (parsedData === null) {
-      // let date = new Date();
-      // date.setDate(date.getDate() - 5);
-      // console.log(date);
       const data = await Document.aggregate([
+        {
+          $match: { provider: 'polygon' },
+        },
         {
           $sort: {
             createdAt: 1,
@@ -86,6 +87,9 @@ userService.getAllData = async () => {
       const avgCostData = [];
       const userData = await Document.aggregate([
         {
+          provider: 'polygon',
+        },
+        {
           $group: {
             _id: { $week: '$createdAt' },
             txHash: { $addToSet: '$transactionHash' },
@@ -101,9 +105,13 @@ userService.getAllData = async () => {
       for (let d of userData) {
         let cost = new BigNumber(0);
         for (let hash of d.txHash) {
-          const transactionData = await transaction.readTransactionLogs(
-            hash,
+          const transactionData = await smartContractFunctionCall(
+            null,
             'setData',
+            { hash },
+            null,
+            'data',
+            d.provider,
           );
           let costOfTransaction = await calculateCostOfTransaction(
             transactionData.effectiveGasPrice,

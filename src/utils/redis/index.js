@@ -32,7 +32,6 @@ const { RedisError } = require('../error/index');
 const set = async (key, value, time) => {
   try {
     // redisClient.connect();
-
     await redisClient.set(key, value, 'EX', time);
   } catch (error) {
     throw new RedisError('Cannot set Data', 400, { error });

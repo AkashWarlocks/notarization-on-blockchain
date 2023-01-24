@@ -1,10 +1,4 @@
-const { CONTRACT_ADDRESS } = require('../../config');
-const {
-  notarization_contract_instance,
-  notarizationABI,
-  getContractInstance,
-  getWeb3Instance,
-} = require('./index');
+const { notarizationABI, getWeb3Instance } = require('./index');
 const {
   getTxCount,
   encodeData,
@@ -13,9 +7,10 @@ const {
   getTransactionReceipt,
   estimatedGasLimit,
   callFunction,
+  readTransactionLogs,
 } = require('./transaction');
 
-const { CONTRACT_EVENTS } = require('../constants');
+const { CONTRACT_EVENTS, WEB3_PROVIDERS } = require('../constants');
 
 const smartContractFunctionCall = async (
   contractType,
@@ -23,8 +18,10 @@ const smartContractFunctionCall = async (
   data,
   keypair,
   typeOfCall,
+  provider,
 ) => {
   try {
+    console.log({ provider });
     //console.log({ contractType, method, data, keypair, typeOfCall });
     console.log(
       `Pushing transaction in ${contractType} on method ${method} by user ${keypair.publicKey} to the blockchain`,
@@ -35,16 +32,21 @@ const smartContractFunctionCall = async (
     };
     let contract;
     let contractAddress;
-    let contractInstances = await getContractInstance();
+    let providerInformation = WEB3_PROVIDERS[provider];
+    let web3Instace = await getWeb3Instance(provider);
+
+    let web3 = web3Instace.web3;
+    let contractInstances = web3Instace.contractInstance;
+    let common = web3Instace.common;
 
     // To set contract address and instance depending on the @contractType variable
     switch (contractType) {
       case 'notarization':
-        contract = contractInstances.notarization_contract_instance;
-        contractAddress = CONTRACT_ADDRESS;
+        contract = contractInstances;
+        contractAddress = providerInformation.contract.notarization;
         break;
       default:
-        contract = contractInstances.notarization_contract_instance;
+        contract = providerInformation.contract.notarization_contract_instance;
         break;
     }
     let result = null;
@@ -66,74 +68,59 @@ const smartContractFunctionCall = async (
        */
 
       // 1. To get User transaction counts
-      const txCount = await getTxCount(keypair.publicKey);
+      const txCount = await getTxCount(keypair.publicKey, web3);
 
-      const encodedData = await encodeData(contract, method, data);
+      // 2. Encode Data
+      const encodedData = await encodeData(contract, method, data, web3);
 
-      // 2. To estimate Gas
+      // 3. To estimate Gas
       const estimateGasPrice = await estimatedGasLimit(
         keypair,
         txCount,
         encodedData,
         contractAddress,
+        web3,
+        providerInformation.ethGasPriceAPI,
       );
-      console.log({ estimateGasPrice });
-      console.log('signing transaction');
-      // 3.
+
+      console.log('Signing transaction');
+
+      //4. Sign Transaction
       const signedTransaction = await signTransaction(
         `${txCount}`,
         encodedData,
         keypair,
         contractAddress,
-        //estimateGasPrice.estimatedGasLimit,
-        '819758',
-        //`${estimateGasPrice.gasPrice.fastest}`,
-        '30.817300933',
+        estimateGasPrice.estimatedGasLimit,
+        // 395501,
+        estimateGasPrice.gasPrice,
+        web3,
+        common,
       );
 
-      //
-      const transaction = await sendSignedTransaction(signedTransaction);
-      console.log({ transaction });
-
-      console.log({ logs: transaction.logs });
-
-      // Get Receipt of transaction based on transaction hash
-      const receipt = await getTransactionReceipt(transaction.transactionHash);
-      console.log({ receipt });
-      console.log({ logs: receipt.logs });
+      console.log('Sending Transaction');
+      // 5. Send Transaction
+      const transaction = await sendSignedTransaction(signedTransaction, web3);
+      //  console.log({ transaction });
+      // 6. Get Receipt of transaction based on transaction hash
+      const receipt = await getTransactionReceipt(
+        transaction.transactionHash,
+        web3,
+      );
 
       result = { ...result, transactionHash: receipt.transactionHash };
-      let array = receipt.logs.slice(0, receipt.logs.length - 1);
-      // let array = [receipt.logs[1]];
-
+      // console.log(receipt.logs);
+      // console.log(providerInformation.resultArray);
+      let array = receipt.logs.slice(
+        0,
+        receipt.logs.length - providerInformation.resultArray,
+      );
+      // console.log({ array });
       /**
        * This logic to read the receipt and get the details related to the events or return data
        * from the smart contract function call.
        */
 
-      console.log({ array });
-      const web3 = await getWeb3Instance();
-
-      // let decodedData = await web3.eth.abi.decodeLogs(
-      //   [
-      //     {
-      //       name: 'owner',
-      //       type: 'address',
-      //     },
-      //     {
-      //       name: 'hash',
-      //       type: 'string',
-      //     },
-      //     {
-      //       name: 'timestamp',
-      //       type: 'uint256',
-      //     },
-      //   ],
-      //   '0x0000000000000000000000000000000000000000000000000014d5a406b44c100000000000000000000000000000000000000000000000000d9a75f0b4637ca00000000000000000000000000000000000000000000011faee0b7fb638fa408d0000000000000000000000000000000000000000000000000d85a04cadaf30900000000000000000000000000000000000000000000011faee20555a3fae8c9d',
-      //   log.data.topics,
-      // );
-
-      // console.log({ decodedData });
       await Promise.all(
         array.map(async (log, i) => {
           let event = functionEvent[i];
@@ -142,23 +129,25 @@ const smartContractFunctionCall = async (
           let abi = contract.filter(
             (c) => c.type === 'event' && c.name === event.eventName,
           );
-          console.log({ data: abi[0].inputs });
-          console.log({ log });
-          const web3 = await getWeb3Instance();
+          // console.log({ abi });
           let topics = log.topics.slice(1);
+          // console.log({ topics });
           let decodedData = await web3.eth.abi.decodeLog(
             abi[0].inputs,
             log.data,
             topics,
           );
 
-          // let decodedData = await web3.eth.abi.decodeParameters(
-          //   abi[0].inputs,
-          //   '0x000000000000000000000000000000000000000000000000000e760fd23801da0000000000000000000000000000000000000000000000000c9f3e2a2a76b36c000000000000000000000000000000000000000000001327ab45731bd33f174d0000000000000000000000000000000000000000000000000c90c81a583eb192000000000000000000000000000000000000000000001327ab53e92ba5771927',
-          // );
-          console.log({ decodedData });
           result = { ...result, [event.eventName]: decodedData };
         }),
+      );
+    }
+    // To Read Data from transaction Logs
+    else if (typeOfCall === 'data') {
+      const transactionData = await readTransactionLogs(
+        data.hash,
+        'setData',
+        web3,
       );
     }
 

@@ -1,74 +1,164 @@
 const Web3 = require('web3');
-const Common = require('@ethereumjs/common').default;
-const { Chain, CustomChain, Hardfork } = require('@ethereumjs/common');
+const _Common = require('@ethereumjs/common');
+let s = _Common;
+const { Chain, CustomChain, Common } = require('@ethereumjs/common');
 const config = require('../../config');
 const BigNumber = require('bignumber.js').BigNumber;
+const { set, get } = require('../redis');
 
-let web3 = null;
+// let web3 = null;
+
+let web3Data = {
+  polygon: {
+    web3: null,
+    contractInstance: null,
+    common: null,
+  },
+  binance: {
+    web3: null,
+    contractInstance: null,
+    common: null,
+  },
+  ethereum: {
+    web3: null,
+    contractInstance: null,
+    common: null,
+  },
+};
+
 let common = null;
 let notarization_contract_instance = null;
 const notarizationABI = require('./contracts/notarization_ABI.json');
-const notarizationContractAddress = config.CONTRACT_ADDRESS;
+const { WEB3_PROVIDERS } = require('../constants');
+const { BlockchainError } = require('../error');
 
-const initializeWeb3 = async () => {
+const initializeWeb3 = async (provider) => {
   try {
+    console.log(provider.name);
     // Initialize web3 instance using INFURA URL
     // Basically connect to blockchain we want using web3 sdk
-    const web3Provider = new Web3.providers.HttpProvider(config.WEB3_PROVIDER);
-    web3 = new Web3(web3Provider);
-    //console.log({ web3 });
+    const web3Provider = new Web3.providers.HttpProvider(provider.web3);
+    let web3 = new Web3(web3Provider);
 
     let block = await web3.eth.getBlockNumber();
-    console.log({ block });
+    console.log({ [provider.name]: block });
 
-    // Creates a object for a custom chain, based on a standard one.
-    common = Common.custom(CustomChain.PolygonMumbai, {
-      baseChain: 5,
-    });
     web3.eth.handleRevert = true;
-    console.log(web3.eth.handleRevert);
-    //common = Common.custom(Chain.Ropsten, { hardfork: Hardfork.Petersburg });
-    await initializeContract();
+
+    let contractInstance = await initializeContract(
+      web3,
+      provider.contract.notarization,
+    );
+
+    return { web3, contractInstance };
   } catch (error) {
     throw error;
   }
 };
 
-const getWeb3Instance = async () => {
+const getWeb3Instance = async (provider) => {
   try {
-    return web3;
+    const instance = web3Data[provider];
+    return instance;
   } catch (error) {
     throw error;
   }
 };
 
-const getCommon = async () => {
+const getCommon = async (provider) => {
   try {
+    let common = null;
+
+    switch (provider) {
+      case 'polygon':
+        common = Common.custom(CustomChain.PolygonMumbai, { baseChain: 5 });
+        break;
+      case 'ethereum':
+        common = new Common({
+          chain: Chain.Goerli,
+        });
+        break;
+      case 'binance':
+        common = Common.custom({ chainId: 97 }, { hardfork: 'istanbul' });
+        break;
+    }
+
+    return common;
+  } catch (error) {
+    throw new BlockchainError('Cannot get Chain', 400, { error });
+  }
+};
+
+// Function to initialize smart contracts
+// Take ABI from the file and address of contract when deployed -> pass to the sdk function.
+const initializeContract = async (web3Provider, contractAddress) => {
+  try {
+    let contract_instance = new web3Provider.eth.Contract(
+      notarizationABI,
+      contractAddress,
+    );
+
+    return contract_instance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const initializeCommon = async (provider) => {
+  try {
+    let common = null;
+
+    switch (provider) {
+      case 'polygon':
+        common = Common.custom(CustomChain.PolygonMumbai, { baseChain: 5 });
+        break;
+      case 'ethereum':
+        common = new Common({
+          chain: Chain.Goerli,
+        });
+        break;
+      case 'binance':
+        common = Common.custom({ chainId: 97 }, { hardfork: 'istanbul' });
+        break;
+    }
+
     return common;
   } catch (error) {
     throw error;
   }
 };
 
-// Function to initialize smart contracts
-// Take ABI from the file and address of contract when deployed -> pass to the sdk function.
-const initializeContract = async () => {
+const getContractInstance = async (provider) => {
   try {
-    notarization_contract_instance = new web3.eth.Contract(
-      notarizationABI,
-      notarizationContractAddress,
-    );
-    // console.log({ notarization_contract_instance });
+    let contractInstance = web3Data[provider].contractInstance;
+    return contractInstance;
   } catch (error) {
     throw error;
   }
 };
 
-const getContractInstance = async () => {
+const connectBlockchains = async () => {
   try {
-    return {
-      notarization_contract_instance,
-    };
+    let providers = WEB3_PROVIDERS;
+    // Connect to different blockchains parallely
+    [web3Data.polygon, web3Data.ethereum, web3Data.binance] = await Promise.all(
+      [
+        initializeWeb3(providers.polygon),
+        initializeWeb3(providers.ethereum),
+        initializeWeb3(providers.binance),
+      ],
+    );
+
+    // set common for different blockchains parallely
+    [
+      web3Data.polygon.common,
+      web3Data.ethereum.common,
+      web3Data.binance.common,
+    ] = await Promise.all([
+      initializeCommon('polygon'),
+      initializeCommon('ethereum'),
+      initializeCommon('binance'),
+    ]);
   } catch (error) {
     throw error;
   }
@@ -109,7 +199,7 @@ module.exports = {
   getCommon,
   newAccount,
   calculateCostOfTransaction,
-  web3,
+  connectBlockchains,
   common,
   notarization_contract_instance,
   notarizationABI,

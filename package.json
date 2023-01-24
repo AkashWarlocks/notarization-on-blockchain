@@ -10,8 +10,8 @@
   "author": "Akash Kulkarni",
   "license": "ISC",
   "dependencies": {
-    "@ethereumjs/common": "^2.6.2",
-    "@ethereumjs/tx": "^3.5.0",
+    "@ethereumjs/common": "^3.0.2",
+    "@ethereumjs/tx": "^4.0.2",
     "axios": "^0.26.0",
     "bcrypt": "^5.0.1",
     "bcryptjs": "^2.4.3",

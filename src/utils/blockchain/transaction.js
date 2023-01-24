@@ -1,7 +1,5 @@
 const { getWeb3Instance, getCommon, notarizationABI } = require('./index');
-const EthereumTx = require('@ethereumjs/tx').Transaction;
-const Common = require('@ethereumjs/common').default;
-const { MATIC_BASE_URL, CONTRACT_ADDRESS } = require('../../config');
+const { Transaction } = require('@ethereumjs/tx');
 const { CONTRACT_EVENTS } = require('../constants');
 
 const axios = require('../axios');
@@ -9,10 +7,8 @@ const { BlockchainError, UserError } = require('../error');
 let transaction = {};
 
 // Function to get the number of transaction count of the user: using publicKey
-transaction.getTxCount = async (publicKey) => {
+transaction.getTxCount = async (publicKey, web3) => {
   try {
-    const web3 = await getWeb3Instance();
-    // console.log({ web3 });
     const txCount = await web3.eth.getTransactionCount(publicKey);
     return txCount;
   } catch (error) {
@@ -30,15 +26,12 @@ transaction.getTxCount = async (publicKey) => {
  */
 transaction.encodeData = async (contractInstance, method, data) => {
   try {
-    console.log({ method, data });
-    const web3 = await getWeb3Instance();
     const encodedData = await contractInstance.methods[method](
       ...data,
     ).encodeABI();
 
     return encodedData;
   } catch (error) {
-    console.log('in encode error');
     throw error;
   }
 };
@@ -56,9 +49,9 @@ transaction.estimatedGasLimit = async (
   nonce,
   encodedData,
   contractAddress,
+  web3,
+  apiInformation,
 ) => {
-  const web3 = await getWeb3Instance();
-
   try {
     const estimatedGasLimit = await web3.eth.estimateGas({
       from: userKeypair.publicKey,
@@ -67,9 +60,20 @@ transaction.estimatedGasLimit = async (
       data: encodedData,
     });
 
-    //const gasPrice = await this.getGasPrice();
-    const response = await axios(MATIC_BASE_URL, '', 'GET', {}, {}, {}, 'json');
-    return { estimatedGasLimit, gasPrice: response.data };
+    const price = await web3.eth.getGasPrice();
+
+    let { url, method, data, headers, params, resultKey } = apiInformation;
+
+    const response = await axios(
+      url,
+      '',
+      method,
+      headers,
+      data,
+      params,
+      'json',
+    );
+    return { estimatedGasLimit, gasPrice: response.data[resultKey], price };
   } catch (error) {
     let code = error.message.replace(
       'Returned error: execution reverted: ',
@@ -88,6 +92,8 @@ transaction.estimatedGasLimit = async (
  * @param {string} contractAddress
  * @param {string} gasLimit
  * @param {string} estimatedGasPrice
+ * @param {Object} web3
+ * @param {string} provider
  * @returns raw : transaction string
  */
 transaction.signTransaction = async (
@@ -97,30 +103,27 @@ transaction.signTransaction = async (
   contractAddress,
   gasLimit,
   estimatedGasPrice,
+  web3,
+  common,
 ) => {
   try {
-    const web3 = await getWeb3Instance();
-
-    console.log({
-      gasLimit,
-      estimatedGasPrice: web3.utils.toWei(estimatedGasPrice, 'gwei'),
-    });
-
+    // Set Transaction Object
     const txObject = {
-      chainId: 80001,
+      chainId: 97,
       nonce: web3.utils.toHex(txCount),
       gasLimit: web3.utils.toHex(gasLimit), // Raise the gas limit to a much higher amount
-      gasPrice: web3.utils.toHex(web3.utils.toWei(estimatedGasPrice, 'gwei')),
+      gasPrice: web3.utils.toHex(estimatedGasPrice),
+      // gasPrice: '0x404673b3e',
       to: contractAddress,
       data,
     };
 
-    // To get details of network used
-    const common = await getCommon();
+    // // To get details of network used
+    // const common = await getCommon(provider);
 
     // console.log({ common });
     // Initialize Transaction object and freeze the tx object
-    let tx = new EthereumTx(txObject, { common });
+    let tx = Transaction.fromTxData(txObject, { common });
 
     const privateKey = userKeypair.privateKey.substr(2);
 
@@ -151,11 +154,10 @@ transaction.signTransaction = async (
  * @returns {Object} transaction: Transaction object details.
  */
 
-transaction.sendSignedTransaction = async (signedTransaction) => {
+transaction.sendSignedTransaction = async (signedTransaction, web3) => {
   try {
-    const web3 = await getWeb3Instance();
-
     const transaction = await web3.eth.sendSignedTransaction(signedTransaction);
+    // console.log(transaction);
     return transaction;
   } catch (error) {
     console.log('in error');
@@ -166,14 +168,12 @@ transaction.sendSignedTransaction = async (signedTransaction) => {
       receipt = await this.getTransactionReceipt(error.receipt.transactionHash);
     }
 
-    throw error;
+    throw new BlockchainError('Cannot send signed transaction', 400, {});
   }
 };
 
-transaction.getTransactionReceipt = async (txHash) => {
+transaction.getTransactionReceipt = async (txHash, web3) => {
   try {
-    const web3 = await getWeb3Instance();
-
     const receipt = await web3.eth.getTransactionReceipt(txHash);
     return receipt;
   } catch (error) {}
@@ -204,10 +204,8 @@ transaction.callFunction = async (contractInstance, method, data, options) => {
   }
 };
 
-transaction.readTransactionLogs = async (txHash, method) => {
+transaction.readTransactionLogs = async (txHash, method, web3) => {
   try {
-    const web3 = await getWeb3Instance();
-
     const receipt = await web3.eth.getTransactionReceipt(txHash);
 
     let array = receipt.logs.slice(0, receipt.logs.length - 1);

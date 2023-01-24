@@ -1,11 +1,8 @@
 const express = require('express');
 require('dotenv').config();
-const morgan = require('morgan');
 const cors = require('cors');
-const { initializeWeb3 } = require('./utils/blockchain');
+const { connectBlockchains, getWeb3Instance } = require('./utils/blockchain');
 const app = express();
-const mongoose = require('mongoose');
-const { MONGODB_URL } = require('./config');
 const globalErrorHandler = require('./middleware/error');
 
 require('./model/index');
@@ -26,7 +23,11 @@ app.use(globalErrorHandler);
 
 app.listen(3000, async () => {
   console.log('server running on port 3000');
-  await initializeWeb3();
+
+  await connectBlockchains();
+  //const web3 = await getWeb3Instance('binance');
+  //console.log(web3);
+  //
   // await saveHash(
   //   '622092ccf71b7423142c3ecc',
   //   '622092ccf71b7423142c3ecc',
