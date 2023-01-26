@@ -34,6 +34,7 @@ const WEB3_PROVIDERS = {
       headers: { 'Content-Type': 'application/json' },
       resultKey: 'result',
     },
+    symbol: 'MATIC',
   },
 
   ethereum: {
@@ -50,6 +51,7 @@ const WEB3_PROVIDERS = {
       headers: { 'Content-Type': 'application/json' },
       resultKey: 'result',
     },
+    symbol: 'ETH',
   },
 
   binance: {
@@ -66,6 +68,7 @@ const WEB3_PROVIDERS = {
       headers: { 'Content-Type': 'application/json' },
       resultKey: 'result',
     },
+    symbol: 'BNB',
   },
 };
 const CONTRACT_ERRORS = {

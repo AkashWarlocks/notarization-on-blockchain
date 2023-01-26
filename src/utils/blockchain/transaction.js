@@ -204,12 +204,10 @@ transaction.callFunction = async (contractInstance, method, data, options) => {
   }
 };
 
-transaction.readTransactionLogs = async (txHash, method, web3) => {
+transaction.readTransactionLogs = async (txHash, method, web3, resultArray) => {
   try {
     const receipt = await web3.eth.getTransactionReceipt(txHash);
-
-    let array = receipt.logs.slice(0, receipt.logs.length - 1);
-    // console.log({ array });
+    let array = receipt.logs.slice(0, receipt.logs.length - resultArray);
     const functionEvent = CONTRACT_EVENTS[method];
     // console.log({ functionEvent });
     let result = null;
@@ -223,7 +221,7 @@ transaction.readTransactionLogs = async (txHash, method, web3) => {
         );
         // console.log({ data: abi[0].inputs });
         // console.log({ log });
-        const web3 = await getWeb3Instance();
+        // const web3 = await getWeb3Instance();
         let topics = log.topics.slice(1);
         let decodedData = await web3.eth.abi.decodeLog(
           abi[0].inputs,
@@ -235,7 +233,7 @@ transaction.readTransactionLogs = async (txHash, method, web3) => {
         //   abi[0].inputs,
         //   '0x000000000000000000000000000000000000000000000000000e760fd23801da0000000000000000000000000000000000000000000000000c9f3e2a2a76b36c000000000000000000000000000000000000000000001327ab45731bd33f174d0000000000000000000000000000000000000000000000000c90c81a583eb192000000000000000000000000000000000000000000001327ab53e92ba5771927',
         // );
-        // console.log({ decodedData });
+
         result = { ...receipt, [event.eventName]: decodedData };
       }),
     );

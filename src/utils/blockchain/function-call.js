@@ -23,9 +23,7 @@ const smartContractFunctionCall = async (
   try {
     console.log({ provider });
     //console.log({ contractType, method, data, keypair, typeOfCall });
-    console.log(
-      `Pushing transaction in ${contractType} on method ${method} by user ${keypair.publicKey} to the blockchain`,
-    );
+
     const startTime = Date.now();
     const options = {
       from: keypair.publicKey,
@@ -54,6 +52,9 @@ const smartContractFunctionCall = async (
     if (typeOfCall === 'call') {
       result = await callFunction(contract, method, data, options);
     } else if (typeOfCall === 'send') {
+      console.log(
+        `Pushing transaction in ${contractType} on method ${method} by user ${keypair.publicKey} to the blockchain`,
+      );
       const functionEvent = CONTRACT_EVENTS[method];
 
       /**

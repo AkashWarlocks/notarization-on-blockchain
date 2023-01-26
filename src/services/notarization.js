@@ -5,6 +5,7 @@ const {
   createUser,
   newAccount,
   calculateCostOfTransaction,
+  getWeb3Instance,
 } = require('../utils/blockchain');
 const Document = require('../model/documentSchema');
 
@@ -13,6 +14,7 @@ let notarizationService = {};
 const BigNumber = require('bignumber.js').BigNumber;
 const moment = require('moment');
 const { set, deleteKey } = require('../utils/redis');
+const { WEB3_PROVIDERS } = require('../utils/constants');
 
 notarizationService.saveHash = async (
   userId,
@@ -116,11 +118,18 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
     // console.log({ userData });
 
     for (let d of userData) {
+      // Get web3 Provider data
+
+      let instance = await getWeb3Instance(d.provider);
+      let providerData = WEB3_PROVIDERS[d.provider];
+
       const transactionData = await transaction.readTransactionLogs(
         d.transactionHash,
         'setData',
+        instance.web3,
+        providerData.resultArray,
       );
-
+      // console.log({ data: d.provider, transactionData });
       let costOfTransaction = await calculateCostOfTransaction(
         transactionData.effectiveGasPrice,
         transactionData.gasUsed,
@@ -132,8 +141,9 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
         documentHash: transactionData.Notarized.hash,
         documentName: transactionData.Notarized.document_name,
         signer: transactionData.from,
-        costOfTransaction: `${costOfTransaction} MATIC `,
+        costOfTransaction: `${costOfTransaction} ${providerData.symbol} `,
         timeTaken: d.timeElapsed,
+        provider: d.provider,
         date: moment.unix(d.timestamp).format('DD/MM/YYYY HH:mm:ss'),
       };
       returnData.push(object);

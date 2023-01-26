@@ -87,7 +87,7 @@ userService.getAllData = async () => {
       const avgCostData = [];
       const userData = await Document.aggregate([
         {
-          provider: 'polygon',
+          $match: { provider: 'polygon' },
         },
         {
           $group: {
