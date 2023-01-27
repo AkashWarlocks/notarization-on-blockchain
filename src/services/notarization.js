@@ -64,6 +64,7 @@ notarizationService.saveHash = async (
       transactionHash: data.transactionHash,
       timestamp: data.Notarized.timestamp,
       explorerURL: data.explorerURL,
+      notarizationKey: data.Notarized.hash,
     };
   } catch (error) {
     throw error;
