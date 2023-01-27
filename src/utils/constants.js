@@ -35,6 +35,7 @@ const WEB3_PROVIDERS = {
       resultKey: 'result',
     },
     symbol: 'MATIC',
+    explorerURL: 'https://mumbai.polygonscan.com/tx/',
   },
 
   ethereum: {
@@ -52,6 +53,7 @@ const WEB3_PROVIDERS = {
       resultKey: 'result',
     },
     symbol: 'ETH',
+    explorerURL: 'https://goerli.etherscan.io/tx/',
   },
 
   binance: {
@@ -69,6 +71,7 @@ const WEB3_PROVIDERS = {
       resultKey: 'result',
     },
     symbol: 'BNB',
+    explorerURL: 'https://testnet.bscscan.com/tx/',
   },
 };
 const CONTRACT_ERRORS = {

@@ -142,6 +142,10 @@ const smartContractFunctionCall = async (
           result = { ...result, [event.eventName]: decodedData };
         }),
       );
+
+      // Add Transaction hash to explorer URL
+      result.explorerURL =
+        providerInformation.explorerURL + receipt.transactionHash;
     }
     // To Read Data from transaction Logs
     else if (typeOfCall === 'data') {
@@ -155,6 +159,7 @@ const smartContractFunctionCall = async (
     const timeElapsed = (Date.now() - startTime) / 1000;
     console.log('Pushed transaction', { timeElapsed });
     result.timeElapsed = timeElapsed;
+
     return result;
   } catch (error) {
     throw error;

@@ -63,6 +63,7 @@ notarizationService.saveHash = async (
       uploadSuccess: true,
       transactionHash: data.transactionHash,
       timestamp: data.Notarized.timestamp,
+      explorerURL: data.explorerURL,
     };
   } catch (error) {
     throw error;
@@ -144,6 +145,7 @@ notarizationService.getData = async (userId, signerId, timestamp) => {
         costOfTransaction: `${costOfTransaction} ${providerData.symbol} `,
         timeTaken: d.timeElapsed,
         provider: d.provider,
+        explorerURL: providerData.explorerURL + d.transactionHash,
         date: moment.unix(d.timestamp).format('DD/MM/YYYY HH:mm:ss'),
       };
       returnData.push(object);

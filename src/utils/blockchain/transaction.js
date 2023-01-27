@@ -107,6 +107,10 @@ transaction.signTransaction = async (
   common,
 ) => {
   try {
+    // console.log({
+    //   estimatedGasPrice: web3.utils.hexToNumber(estimatedGasPrice),
+    //   limit: gasLimit,
+    // });
     // Set Transaction Object
     const txObject = {
       chainId: 97,
